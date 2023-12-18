@@ -1,48 +1,48 @@
-FinalOPcode=[]
-labels=[]
-instructions=[]
-counterLabel=0
-LabelFlag=False
-flag=False
-counter=0
+FinalOPcode=[] #holding the final opcode of all instructions
+labels=[]      #a list of labels 
+instructions=[] #a list of instructions 
+counterLabel=0 #to count the number of each instructions that is assembled between the definition of the label and jump to that label(for the backeard jump)
+LabelFlag=False #it uses for the forward jump
+flag=False #for the backward jump if the label was available
+counter=0 #it's the counter of instruction for the forward jump
 print("Which way you want to read data from:1-file 2-CommandLine..... or 3-Exit")
-num=int(input())
-if num == 1:
-    path=input("Enter the path of the file: ")
-    with open(path, "r") as file:
-        instructions = file.readlines()
-elif (num == 2):
+num=int(input()) 
+if num == 1: #if the input should be read from a file
+    path=input("Enter the path of the file: ") #get the path of the file and hold it in the path
+    with open(path, "r") as file: #read the file
+        instructions = file.readlines()  #hold each line a part as a string in instructions list
+elif (num == 2): #if instructions should be read from the command line and store it in instructions list
     while(1):
-        Instruction=input("Enter the instruction you want to assemble:(if there is no instruction to assemble just press enter)")
-        if (not Instruction):
+        Instruction=input("Enter the instruction you want to assemble(if there is no instruction to assemble just press enter): ")
+        if (not Instruction): #if there was no line or instructions as input (or enter) it will break the while loop
             break
         else:
-            instructions.append(Instruction)
-LineCounter=len(instructions)
+            instructions.append(Instruction) #each instruction that read from the command line it will add to the list of instruction
+LineCounter=len(instructions) #calculate the number of instructions in the list
 for i in range(LineCounter):
-    Instruction = ""
-    Counter=0
-    flagSpace=False
-    for element in instructions[i]:
-        if element == ' ' and flagSpace == False and Counter <= len(instructions[i]):
+    Instruction = "" #an empty string to hold each instruction of the instructions list
+    Counter=0 #to not calculate the first white space of an instruction
+    flagSpace=False #a flag to check the white space of the instruction
+    for element in instructions[i]: #a for loop to add the i th elemnt of the instructions list to Instruction 
+        if element == ' ' and flagSpace == False and Counter <= len(instructions[i]): #to don't add the first whitespace of the instructions to the Instruction
             Counter+=1
-        elif element != '\n':
-            flagSpace=True
+        elif element != '\n': #if at the end of the instruction there was a '\n' or new line character
+            flagSpace=True #it becomes true because we reach the first character after the whitespaces of the instruction
             Instruction+=element
-    if(Instruction[len(Instruction)-1]==':'):
-        for element in labels:
+    if(Instruction[len(Instruction)-1]==':'): #this if statement check if the instruction is a label definition
+        for element in labels: #this loop checks if the label is in the labels list or not(for the backward and forward jump)
             if Instruction[:len(Instruction)-1] == element:
-                labels.remove(Instruction[:len(Instruction)-1])
-                flag=True
+                labels.remove(Instruction[:len(Instruction)-1]) #if it was a backward jump it will remove the element from the list
+                flag=True 
         if flag== True:
-            for i in range(0,len(FinalOPcode)):
-                if FinalOPcode[i] == ("eb"+Instruction[0:len(Instruction)-1]):
+            for i in range(0,len(FinalOPcode)): #this for loop is because of replacing the new opcode of the backward jumo with the one that has been defind
+                if FinalOPcode[i] == ("eb"+Instruction[0:len(Instruction)-1]): #it will search for the opcode of that label in the final opcode list
                     for j in range(i+1,len(FinalOPcode)):
-                        counter+=len(FinalOPcode[j])//2
+                        counter+=len(FinalOPcode[j])//2  #this part is for adding the number of byte of the instructions
                     FinalOPcode[i] = "eb" + "{:02x}".format(int('00', 16) + counter)
-                    counter=0
-        labels.append(Instruction[:len(Instruction)-1])
-        LabelFlag=True
+                    counter=0 
+        labels.append(Instruction[:len(Instruction)-1]) #if the label wasnt available it will append it to the labels list
+        LabelFlag=True #this label used because the instruction is a label and it has to count the number of instruction between it
         flag=False
     else:
         command=""
