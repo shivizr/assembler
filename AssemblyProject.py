@@ -159,6 +159,10 @@ for i in range(LineCounter):
                     return '56'
                 elif reg=='di' or reg=='edi':
                     return '57'
+                elif (int(reg))>=0and (int(reg))<=127:
+                    return '6a'+hex(int(reg))[2:]
+                elif (int(reg))<0 and (int(reg))>= -128:
+                    return '6a'+hex(int(reg))[3:]
             elif command=='pop':
                 if reg=='ax' or reg=='eax':
                     return '58'
@@ -256,4 +260,3 @@ elif (num == 2 or num == 1):
         counter+=len(FinalOPcode[i])//2
         print(final)
         final=""
-file.close()
