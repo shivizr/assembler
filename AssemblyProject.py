@@ -13,7 +13,7 @@ if num == 1:
         instructions = file.readlines()
 elif (num == 2):
     while(1):
-        Instruction=input("Enter the instruction you want to assemble:")
+        Instruction=input("Enter the instruction you want to assemble:(if there is no instruction to assemble just press enter)")
         if (not Instruction):
             break
         else:
@@ -21,8 +21,13 @@ elif (num == 2):
 LineCounter=len(instructions)
 for i in range(LineCounter):
     Instruction = ""
+    Counter=0
+    flagSpace=False
     for element in instructions[i]:
-        if element != '\n':
+        if element == ' ' and flagSpace == False and Counter <= len(instructions[i]):
+            Counter+=1
+        elif element != '\n':
+            flagSpace=True
             Instruction+=element
     if(Instruction[len(Instruction)-1]==':'):
         for element in labels:
@@ -87,13 +92,7 @@ for i in range(LineCounter):
                 labels.append(label)
                 return "eb"+label
             elif flagAvailable==True:
-                if (len(labels)!=0):
                     finalNum = hex(int('fe', 16) - counter)[2:]
-                    return "eb"+finalNum
-                else:
-                    finalNum = hex(int('fe', 16) - counter)[2:]
-                    LabelFlag=False
-                    counterLabel=0
                     return "eb"+finalNum
         def Command(command,reg):
             if command =='jmp':
@@ -194,6 +193,9 @@ for i in range(LineCounter):
             else:
                 OPcode+='66'
         OPcode+=Command(command,reg1)
+        if(command=='jmp' and len(labels)==0):
+            counterLabel=0
+            LabelFlag=False
         if flagCommand==False:
             if reg1=='al'or reg1=='bl' or reg1=='cl'or reg1=='dl'or reg1=='ah' or reg1=='bh' or reg1=='ch'or reg1=='dh':
                 if reg1[0]=='[':
