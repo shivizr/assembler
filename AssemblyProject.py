@@ -203,14 +203,12 @@ for i in range(LineCounter):
             if flagCommand==False:
                 OPcode+='01100110' #prefix byte for 16 bit
             else:
-                OPcode+='66' #prefix byte for 16bit for the push pop inc dec 
-        #if command == 'add' or command == 'sub' or command == 'xor' or command == 'or' or command == 'and':
-            
+                OPcode+='66' #prefix byte for 16bit for the push pop inc dec             
         OPcode+=Command(command,reg1) #return the opcode of the command
         if(command=='jmp' and len(labels)==0): #it will change the counterLabel and LabelFlag if there is a forward jump 
             counterLabel=0
             LabelFlag=False
-            indirect=False
+            indirect=False #this flag is for indirect addressing
         if flagCommand==False: #if the command is not between the pop , push , inc , dec , jmp
             if reg1 in Reg8:
                 if reg2[0]=='[':
@@ -263,14 +261,14 @@ for i in range(LineCounter):
                         Reg+=i
                 if Reg == '0' or RM == '0':
                     OPcode = '0'
-                if indirect == True and not RM in Reg32:
+                if indirect == True and not RM in Reg32: #checks if the indirect addressing is true and its a 32 bit register
                     OPcode = '0'
                 elif indirect == False :
-                    if RM  in Reg32 and  Reg  in Reg32:
+                    if RM  in Reg32 and  Reg  in Reg32: #check if both are reg 32
                         OPcode+=MOD_Reg_RM+REG(Reg)+REG(RM)
-                    elif  RM in Reg16 and  Reg in Reg16:
+                    elif  RM in Reg16 and  Reg in Reg16: #check if both are reg 16
                         OPcode+=MOD_Reg_RM+REG(Reg)+REG(RM)
-                    elif  RM in Reg8 and  Reg in Reg8:
+                    elif  RM in Reg8 and  Reg in Reg8: #check if both are reg 8
                         OPcode+=MOD_Reg_RM+REG(Reg)+REG(RM)
                     else:
                         OPcode='0'
