@@ -5,6 +5,10 @@ counterLabel=0 #to count the number of each instructions that is assembled betwe
 LabelFlag=False #it uses for the forward jump
 flag=False #for the backward jump if the label was available
 counter=0 #it's the counter of instruction for the forward jump
+Reg8=['al','ah','bl','bh','cl','ch','dl','dh']
+Reg16=['ax','bx','cx','dx','si','di','bp','sp']
+Reg32=['eax','ebx','ecx','edx','ebp','esp','esi','edi']
+indirect = False
 print("Which way you want to read data from:1-file 2-CommandLine..... or 3-Exit")
 num=int(input()) 
 if num == 1: #if the input should be read from a file
@@ -45,15 +49,15 @@ for i in range(LineCounter):
         LabelFlag=True #this label used because the instruction is a label and it has to count the number of instruction between it
         flag=False
     else:
-        command=""
-        reg1=""
-        reg2=""
-        flagCommand=True
+        command="" #to store the command 
+        reg1="" #to hold the first register or memory
+        reg2="" #to hold the second register or memory
+        flagCommand=True 
         flagReg1=False
         flagReg2=False
-        for element in Instruction:
+        for element in Instruction: #to seperate the command and register or memory from the instruction 
             if element==' ' and flagCommand==True:
-                flagCommand=False
+                flagCommand=False 
                 flagReg1=True
             elif flagReg1==True and element==',':
                 flagReg1=False
@@ -65,36 +69,38 @@ for i in range(LineCounter):
                     reg1+=element
                 elif flagReg2==True:
                     reg2+=element
-        def REG(reg):
+        def REG(reg): #for the code of each register
             if(reg=='al' or reg=='ax' or reg=='eax'):
                 return '000'
-            if(reg=='cl' or reg=='cx' or reg=='ecx'):
+            elif(reg=='cl' or reg=='cx' or reg=='ecx'):
                 return '001'
-            if(reg=='dl' or reg=='dx' or reg=='edx'):
+            elif(reg=='dl' or reg=='dx' or reg=='edx'):
                 return '010'
-            if(reg=='bl' or reg=='bx' or reg=='ebx'):
+            elif(reg=='bl' or reg=='bx' or reg=='ebx'):
                 return '011'
-            if(reg=='ah' or reg=='sp' or reg=='esp'):
+            elif(reg=='ah' or reg=='sp' or reg=='esp'):
                 return '100'
-            if(reg=='ch' or reg=='bp' or reg=='ebp'):
+            elif(reg=='ch' or reg=='bp' or reg=='ebp'):
                 return '101'
-            if(reg=='dh' or reg=='si' or reg=='esi'):
+            elif(reg=='dh' or reg=='si' or reg=='esi'):
                 return '110'
-            if(reg=='bh' or reg=='di' or reg=='edi'):
+            elif(reg=='bh' or reg=='di' or reg=='edi'):
                 return '111'
-        def jump(counter , label):
-            flagAvailable=False
+            else:
+                return '0'
+        def jump(counter , label): #function for the jump instruction
+            flagAvailable=False # if the flag have been available which means its a backward jump
             for element in labels:
                 if element == label:
-                    labels.remove(label)
-                    flagAvailable=True
-            if flagAvailable==False:
+                    labels.remove(label)# if the label is available in the list of labels it will remove it because drive to it
+                    flagAvailable=True 
+            if flagAvailable==False: # if the label isnt available it will append it to the list
                 labels.append(label)
                 return "eb"+label
-            elif flagAvailable==True:
+            elif flagAvailable==True: #calculate the opcode of the jump
                     finalNum = hex(int('fe', 16) - counter)[2:]
                     return "eb"+finalNum
-        def Command(command,reg):
+        def Command(command,reg): #retuen the opcode of the instruction
             if command =='jmp':
                 return jump(counterLabel , reg1)
             elif command =='add':
@@ -107,7 +113,7 @@ for i in range(LineCounter):
                 return "000010"
             elif command=='xor':
                 return "001100"
-            if command=='inc':
+            if command=='inc':#because each register for the inc command has a specific opcode we seprate the registers
                 if reg=='ax' or reg=='eax':
                     return '40'
                 elif reg=='cx' or reg=='ecx':
@@ -124,7 +130,9 @@ for i in range(LineCounter):
                     return '46'
                 elif reg=='di' or reg=='edi':
                     return '47'
-            elif command=='dec':
+                else:
+                    return '0'
+            elif command=='dec': #same as the inc 
                 if reg=='ax' or reg=='eax':
                     return '48'
                 elif reg=='cx' or reg=='ecx':
@@ -141,7 +149,9 @@ for i in range(LineCounter):
                     return '4e'
                 elif reg=='di' or reg=='edi':
                     return '4f'
-            elif command=='push':
+                else:
+                    return '0'
+            elif command=='push':#same as inc
                 if reg=='ax' or reg=='eax':
                     return '50'
                 elif reg=='cx' or reg=='ecx':
@@ -158,11 +168,11 @@ for i in range(LineCounter):
                     return '56'
                 elif reg=='di' or reg=='edi':
                     return '57'
-                elif (int(reg))>=0and (int(reg))<=127:
+                elif (int(reg))>=0and (int(reg))<=127: #for the 8-bit imm
                     return '6a'+hex(int(reg))[2:]
-                elif (int(reg))<0 and (int(reg))>= -128:
+                elif (int(reg))<0 and (int(reg))>= -128: #for the 8-bit imm
                     return '6a'+hex(int(reg))[3:]
-            elif command=='pop':
+            elif command=='pop': #same as inc
                 if reg=='ax' or reg=='eax':
                     return '58'
                 elif reg=='cx' or reg=='ecx':
@@ -179,35 +189,52 @@ for i in range(LineCounter):
                     return '5e'
                 elif reg=='di' or reg=='edi':
                     return '5f'
+                else:
+                    return '0'
         OPcode=""
         flagCommand=False
-        command=command.lower()
-        if command!='jmp':
+        command=command.lower()#i will make all the elements of the instruction to lowercase
+        if command!='jmp': #if the command is not jmp it will the registers the lowercase
             reg1=reg1.lower()
             reg2=reg2.lower()
         if command=='inc' or command=='dec' or command=='push' or command=='pop' or command == 'jmp':
             flagCommand=True
-        if reg1=='ax' or reg1=='cx' or reg1=='dx' or reg1=='bx' or reg1=='sp' or reg1=='bp' or reg1=='si' or reg1=='di':
+        if reg1 in Reg16  or reg2 in Reg16:
             if flagCommand==False:
-                OPcode+='01100110'
+                OPcode+='01100110' #prefix byte for 16 bit
             else:
-                OPcode+='66'
-        OPcode+=Command(command,reg1)
-        if(command=='jmp' and len(labels)==0):
+                OPcode+='66' #prefix byte for 16bit for the push pop inc dec 
+        #if command == 'add' or command == 'sub' or command == 'xor' or command == 'or' or command == 'and':
+            
+        OPcode+=Command(command,reg1) #return the opcode of the command
+        if(command=='jmp' and len(labels)==0): #it will change the counterLabel and LabelFlag if there is a forward jump 
             counterLabel=0
             LabelFlag=False
-        if flagCommand==False:
-            if reg1=='al'or reg1=='bl' or reg1=='cl'or reg1=='dl'or reg1=='ah' or reg1=='bh' or reg1=='ch'or reg1=='dh':
-                if reg1[0]=='[':
+            indirect=False
+        if flagCommand==False: #if the command is not between the pop , push , inc , dec , jmp
+            if reg1 in Reg8:
+                if reg2[0]=='[':
+                    indirect=True
                     OPcode+="10"
-                    d=1
                     s=0
+                    d=1
                 else:
                     OPcode+="00"
                     s=0
                     d=0
+            elif reg2 in Reg8:
+                if reg1[0]=='[':
+                    indirect=True
+                    OPcode+="00"
+                    s=0
+                    d=0
+                else:
+                    OPcode+="10"
+                    s=0
+                    d=1
             else:
                 if reg2[0]=='[':
+                    indirect=True
                     OPcode+="11"
                     d=1
                     s=1
@@ -215,14 +242,15 @@ for i in range(LineCounter):
                     OPcode+="01"
                     d=0
                     s=1
+            #MOD_REG_RM
             Reg=""
             RM=""
             MOD_Reg_RM=""
-            if reg1[0]=='[' or reg2[0]=='[' :
-                MOD_Reg_RM='00'
+            if reg1[0]=='[' or reg2[0]=='[' :#this will choose the type of mod
+                MOD_Reg_RM='00'  #if its a indirect addressing
             else:
-                MOD_Reg_RM='11'
-            if d==0:
+                MOD_Reg_RM='11'  #if its a register addressing
+            if d==0: # this part will choose which part is the RM and which is the REG part to find the opcode
                 for i in reg1:
                     if i!='[':
                         if(i==',' or i==']'):
@@ -233,7 +261,19 @@ for i in range(LineCounter):
                         if(i==',' or i==']'):
                             break
                         Reg+=i
-                OPcode+=MOD_Reg_RM+REG(Reg)+REG(RM)
+                if Reg == '0' or RM == '0':
+                    OPcode = '0'
+                if indirect == True and not RM in Reg32:
+                    OPcode = '0'
+                elif indirect == False :
+                    if RM  in Reg32 and  Reg  in Reg32:
+                        OPcode+=MOD_Reg_RM+REG(Reg)+REG(RM)
+                    elif  RM in Reg16 and  Reg in Reg16:
+                        OPcode+=MOD_Reg_RM+REG(Reg)+REG(RM)
+                    elif  RM in Reg8 and  Reg in Reg8:
+                        OPcode+=MOD_Reg_RM+REG(Reg)+REG(RM)
+                    else:
+                        OPcode='0'
             elif d==1:
                 for i in reg1:
                     if i!='[':
@@ -245,20 +285,46 @@ for i in range(LineCounter):
                         if(i==',' or i==']'):
                             break
                         RM+=i
-                OPcode+=MOD_Reg_RM+REG(Reg)+REG(RM)
+                if Reg == '0' or RM == '0':
+                    OPcode = '0'
+                if indirect == True and not RM in Reg32:
+                    OPcode = '0'
+                elif indirect == False :
+                    if RM  in Reg32 and  Reg  in Reg32:
+                        OPcode+=MOD_Reg_RM+REG(Reg)+REG(RM)
+                    elif  RM in Reg16 and  Reg in Reg16:
+                        OPcode+=MOD_Reg_RM+REG(Reg)+REG(RM)
+                    elif  RM in Reg8 and  Reg in Reg8:
+                        OPcode+=MOD_Reg_RM+REG(Reg)+REG(RM)
+                    else:
+                        OPcode='0'
+                else:
+                    OPcode+=MOD_Reg_RM+REG(Reg)+REG(RM)
+        if OPcode=='0': #if the register that is entered isnt a register 
+            print("somethind wrong")
+            break
         if (command != 'push' and command != 'pop' and command != 'dec' and command != 'inc' and command != 'jmp'):
+            #this if checks if the command is in the items above because the opcode is in the hex base it will not enter this if
             instructionCode=int(OPcode,2)
-            OPcode=format(instructionCode,'04x')
+            OPcode=format(instructionCode,'04x') #change the opcode to the format of hex number
         if (LabelFlag==True):
-            counterLabel+=len(OPcode)//2
-        FinalOPcode.append(OPcode)
+            counterLabel+=len(OPcode)//2 
+        FinalOPcode.append(OPcode) # add the final opcode of each instruction to the instruction list
 final=""
-counter=0
-if(num != 2 and num!=3 and num != 1):
+counter=0 #the counter for the addresses in the memory
+if(num != 2 and num!=3 and num != 1 and OPcode=='0'):
     print("invalid input")
 elif (num == 2 or num == 1):
     for i in range(0,len(FinalOPcode)):
-        final+='0x'+'0'*(16-len(str(counter)))+str(counter)+': '+FinalOPcode[i]
-        counter+=len(FinalOPcode[i])//2
+        final+='0x'+'0'*(16-len(str(counter)))+str(counter)+': '
+        counterForSpace=0
+        for j in FinalOPcode[i]:
+            if counterForSpace==2: #for adding space between each byte of address
+                final+=' '+j
+                counterForSpace=0
+            else:
+                final+=j
+            counterForSpace+=1
+        counter+=len(FinalOPcode[i])//2 #for the memory part
         print(final)
-        final=""
+        final="" #holding the final opcode of each instruction
