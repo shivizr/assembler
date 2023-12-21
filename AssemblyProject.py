@@ -5,9 +5,9 @@ counterLabel=0 #to count the number of each instructions that is assembled betwe
 LabelFlag=False #it uses for the forward jump
 flag=False #for the backward jump if the label was available
 counter=0 #it's the counter of instruction for the forward jump
-Reg8=['al','ah','bl','bh','cl','ch','dl','dh']
-Reg16=['ax','bx','cx','dx','si','di','bp','sp']
-Reg32=['eax','ebx','ecx','edx','ebp','esp','esi','edi']
+Reg8=['al','cl','dl','bl','ah','ch','dh','bh'] #list of 8_bit register
+Reg16=['ax','bx','cx','dx','si','di','bp','sp'] #list of 16_bit register
+Reg32=['eax','ebx','ecx','edx','ebp','esp','esi','edi'] #list of 32_bit register
 indirect = False
 print("Which way you want to read data from:1-file 2-CommandLine..... or 3-Exit")
 num=int(input()) 
@@ -114,7 +114,11 @@ for i in range(LineCounter):
             elif command=='xor':
                 return "001100"
             if command=='inc':#because each register for the inc command has a specific opcode we seprate the registers
-                if reg=='ax' or reg=='eax':
+                if reg in Reg8: # to handel the 8_bit register
+                    for j in range(len(Reg8)):
+                        if reg == Reg8[j]:
+                            return 'fec'+str(j)
+                elif reg=='ax' or reg=='eax':
                     return '40'
                 elif reg=='cx' or reg=='ecx':
                     return '41'
@@ -133,7 +137,12 @@ for i in range(LineCounter):
                 else:
                     return '0'
             elif command=='dec': #same as the inc 
-                if reg=='ax' or reg=='eax':
+                if reg in Reg8: # to handel 8_bit register
+                    for j in range(len(Reg8)):
+                        if reg == Reg8[j]:
+                            index=hex(j+8)[2:]
+                            return 'fec'+str(index)
+                elif reg=='ax' or reg=='eax':
                     return '48'
                 elif reg=='cx' or reg=='ecx':
                     return '49'
