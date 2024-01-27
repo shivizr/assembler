@@ -91,7 +91,7 @@ for i in range(LineCounter):
                     for j in range(i+1,len(FinalOPcode)):
                         counter+=len(FinalOPcode[j])//2  #this part is for adding the number of byte of the instructions
                     FinalOPcode[i] = "eb" + "{:02x}".format(int('00', 16) + counter)
-                    opcodeChange = [FinalOPcode[i][k:k+2] for k in range(0, len(OPcode), 2)]  #this part will reverses the string of the opcode to add to the data part in little endian way
+                    opcodeChange = [FinalOPcode[i][k:k+2] for k in range(0, len(FinalOPcode[i]), 2)]  #this part will reverses the string of the opcode to add to the data part in little endian way
                     opcodeChange = opcodeChange[::-1]
                     OPcode2 = ''.join(opcodeChange)
                     strr=""
