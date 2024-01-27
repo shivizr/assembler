@@ -5,13 +5,16 @@ counterLabel=0 #to count the number of each instructions that is assembled betwe
 LabelFlag=False #it uses for the forward jump
 flag=False #for the backward jump if the label was available
 counter=0 #it's the counter of instruction for the forward jump
-microcontroller=["XX"]*256
-pointerStack=0
-pointerData=0
-pointerCode=0
-stackFlag=False
-dataFlag=False
-codeFlag=False
+microcontroller=["XX"]*256   #as the microcontroller 
+pointerStack=0    # the pointer for the stack and initialize 0
+pointerData=100   #the pointer for the data and initialize 100
+pointerCode=200   #the pointer for the code and initialize 200
+stackFlag=False   #to check if it is in the stack part of the input
+dataFlag=False    #to check if it is in the data part of the input
+codeFlag=False    #to check if it is in the code part of the input
+startStack=0
+startData=100
+startCode=200
 Reg8=['al','cl','dl','bl','ah','ch','dh','bh'] #list of 8_bit register
 Reg16=['ax','bx','cx','dx','si','di','bp','sp'] #list of 16_bit register
 Reg32=['eax','ebx','ecx','edx','ebp','esp','esi','edi'] #list of 32_bit register
@@ -43,18 +46,23 @@ for i in range(LineCounter):
             flagSpace=True #it becomes true because we reach the first character after the whitespaces of the instruction
             Instruction+=element
     if (Instruction[0]=='.'):
-        if(Instruction[1]=='s'):
-            pointerStack=int(Instruction[Instruction.find('(') + 1:Instruction.find(')')])
+        strOfCodePointer=Instruction[Instruction.find('(') + 1:Instruction.find(')')]   #for the address controlling
+        if(Instruction[1]=='s'):   #check if its stack part
+            if (strOfCodePointer.isdigit()):   #its for the address controlling or it has to use the initialized value
+                pointerStack=int(strOfCodePointer)
             count=pointerStack
-            for i in range (32):
+            startStack=pointerStack
+            for i in range (32):    #this part will change all the 0 to 32 byte of that part of memory from XX to MM
                 microcontroller[count]="MM"
                 count+=1
             stackFlag=True
             dataFlag=False
             codeFlag=False
         elif(Instruction[1]=='d'):
-            pointerData=int(Instruction[Instruction.find('(') + 1:Instruction.find(')')])
+            if (strOfCodePointer.isdigit()):
+                pointerData=int(strOfCodePointer)
             count=pointerData
+            startData=pointerData
             for i in range (32):
                 microcontroller[count]="MM"
                 count+=1
@@ -62,8 +70,10 @@ for i in range(LineCounter):
             dataFlag=True
             codeFlag=False
         elif(Instruction[1]=='c'):
-            pointerCode=int(Instruction[Instruction.find('(') + 1:Instruction.find(')')])
+            if (strOfCodePointer.isdigit()):
+                pointerCode=int(strOfCodePointer)
             count=pointerCode
+            startCode=pointerCode
             for i in range (32):
                 microcontroller[count]="MM"
                 count+=1
@@ -81,26 +91,40 @@ for i in range(LineCounter):
                     for j in range(i+1,len(FinalOPcode)):
                         counter+=len(FinalOPcode[j])//2  #this part is for adding the number of byte of the instructions
                     FinalOPcode[i] = "eb" + "{:02x}".format(int('00', 16) + counter)
+                    opcodeChange = [FinalOPcode[i][k:k+2] for k in range(0, len(OPcode), 2)]  #this part will reverses the string of the opcode to add to the data part in little endian way
+                    opcodeChange = opcodeChange[::-1]
+                    OPcode2 = ''.join(opcodeChange)
+                    strr=""
+                    counterLoop=0
+                    for k in (OPcode2): #to add the opcode to the code part
+                        strr+=k
+                        if (counterLoop %2 != 0):
+                            microcontroller[pointerCode]=strr
+                            strr=""
+                            pointerCode+=1
+                        counterLoop+=1
+                    microcontroller[pointerData]=Instruction[:len(Instruction)-1]+'#'+FinalOPcode[i][2:] #will add the label to the data part with its offset
+                    pointerData+=1
                     counter=0 
         labels.append(Instruction[:len(Instruction)-1]) #if the label wasnt available it will append it to the labels list
         LabelFlag=True #this label used because the instruction is a label and it has to count the number of instruction between it
         flag=False
     else:
         if (dataFlag == True ):
-            name=""
+            name=""    #this part will seprate the name of the variable and its type 
             typeName=""
-            spilitedIns=Instruction.split()
+            spilitedIns=Instruction.split()  #seprate the instruction with ' ' (space)
             name=spilitedIns[0]
-            typeName=spilitedIns[1].upper()
-            if typeName == "DWORD":
+            typeName=spilitedIns[1].upper()   #change all the alphabet of type to upper case
+            if typeName == "DWORD":  #dword will take 4 part of the data segment
                 for i in range (4):
                     microcontroller[pointerData]= name
                     pointerData+=1
-            elif typeName == "WORD":
+            elif typeName == "WORD": #word will take 2 part of data segment
                 for i in range (2):
                     microcontroller[pointerData]= name
                     pointerData+=1
-            elif typeName == "BYTE":
+            elif typeName == "BYTE":#byte will take 1 part of data segment
                     microcontroller[pointerData]= name
                     pointerData+=1
         if (codeFlag == True ):
@@ -282,6 +306,9 @@ for i in range(LineCounter):
                 counterLabel=0
                 LabelFlag=False
                 indirect=False #this flag is for indirect addressing
+            if (command == 'jmp' and not reg1 in labels):
+                microcontroller[pointerData]=reg1+'#'+OPcode[2:]
+                pointerData+=1
             if flagCommand==False: #if the command is not between the pop , push , inc , dec , jmp
                 if reg1 in Reg8:
                     if reg2[0]=='[':
@@ -380,16 +407,20 @@ for i in range(LineCounter):
                 OPcode=format(instructionCode,'04x') #change the opcode to the format of hex number
             if (LabelFlag==True):
                 counterLabel+=len(OPcode)//2
-            counterLoop=0
-            strr=""
-            for i in (OPcode):
-                strr+=i
-                if (counterLoop %2 != 0):
-                    microcontroller[pointerCode]=strr
-                    strr=""
-                    pointerCode+=1
-                counterLoop+=1
-            if (command == 'push'):
+            if (command != 'jmp' or not reg1 in labels ):
+                counterLoop=0
+                strr=""
+                opcodeChange = [OPcode[i:i+2] for i in range(0, len(OPcode), 2)]
+                opcodeChange = opcodeChange[::-1]
+                OPcode2 = ''.join(opcodeChange)
+                for i in (OPcode2):
+                    strr+=i
+                    if (counterLoop %2 != 0):
+                        microcontroller[pointerCode]=strr
+                        strr=""
+                        pointerCode+=1
+                    counterLoop+=1
+            if (command == 'push'):  #if we push a 32 reg or 16 or 8 bit reg they will tske number of part of the stack segment
                 if ( reg1 in Reg32 ):
                     microcontroller[pointerStack]=microcontroller[pointerStack+1]=microcontroller[pointerStack+2]=microcontroller[pointerStack+3]=reg1
                     pointerStack+=4
@@ -399,17 +430,17 @@ for i in range(LineCounter):
                 elif (reg1 in Reg8 ):
                     microcontroller[pointerStack]=reg1
                     pointerStack+=4
-                elif (int(reg1) >=-128 and int(reg1)<=127):
+                elif (int(reg1) >=-128 and int(reg1)<=127): #for the 8-bit number
                     microcontroller[pointerStack]=reg1
                     pointerStack+=4
-                elif (int(reg1) >=-32768 and int(reg1)<=32767):
+                elif (int(reg1) >=-32768 and int(reg1)<=32767): #for 16-bit number
                     microcontroller[pointerStack]=microcontroller[pointerStack+1]=reg1
                     pointerStack+=4
-            elif (command == 'pop') :
+            elif (command == 'pop') :  #handel the pop of 32-bit reg
                 if (reg1 in Reg32):
                     microcontroller[pointerStack-1]=microcontroller[pointerStack-2]=microcontroller[pointerStack-3]=microcontroller[pointerStack-4]='MM'
                     pointerStack-=4
-            if (pointerCode %2 !=0):
+            if (pointerCode %2 !=0):  #if the pointer wasnt point to a part with an even num if it wasnt is has to add 1 to become even align
                 pointerCode+=1
             FinalOPcode.append(OPcode)
             # add the final opcode of each instruction to the instruction list
@@ -418,18 +449,14 @@ counter=0 #the counter for the addresses in the memory
 if(num != 2 and num!=3 and num != 1 and OPcode=='0'):
     print("invalid input")
 elif (num == 2 or num == 1):
-#     for i in range(0,len(FinalOPcode)):
-#         final+='0x'+'0'*(16-len(str(counter)))+str(counter)+': '
-#         counterForSpace=0
-#         for j in FinalOPcode[i]:
-#             if counterForSpace==2: #for adding space between each byte of address
-#                 final+=' '+j
-#                 counterForSpace=0
-#             else:
-#                 final+=j
-#             counterForSpace+=1
-#         counter+=len(FinalOPcode[i])//2 #for the memory part
-#         print(final)
-#         final="" #holding the final opcode of each instruction
-    for i in range (80):
-        print (microcontroller[i])
+    for i in range (256):#to print the memory
+        if (i == startCode):
+            finalCode='CS '+str(i) + ' : ' +microcontroller[i]
+        elif (i == startData):
+            finalCode='DS '+str(i) + ' : ' +microcontroller[i]
+        elif (i == startStack):
+            finalCode='SS '+str(i) + ' : ' +microcontroller[i]
+        else:
+            finalCode='  '+str(i) + ' : ' +microcontroller[i]
+        print (finalCode)
+        print ('.........')
